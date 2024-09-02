@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Iframe Template</title>
+    <style>
+        .background-container {
+            position: relative;
+            width: 100%;
+            /* Full width of the viewport */
+            height: 100vh;
+            /* Full height of the viewport */
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+            background-color: #575757;
+            /* Fallback color */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .title {
+            position: absolute;
+            top: 35%;
+            /* Center vertically */
+            color: #fff;
+            /* Text color */
+            font-size: 24px;
+            /* Font size */
+            font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+            text-align: center;
+            z-index: 2;
+            /* Ensure title is above the iframe */
+        }
+
+        .instructions {
+            position: absolute;
+            top: 58%;
+            /* Center vertically */
+            left: 50%;
+            /* Center horizontally */
+            transform: translate(-55%, -55%);
+            /* Offset by half of its width and height to center */
+            color: #a1a1a1;
+            /* Text color */
+            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+            font-size: 12px;
+            /* Font size */
+            text-align: center;
+            z-index: 2;
+            /* Ensure instructions are above the iframe */
+            max-width: 80%;
+            /* Ensure text fits within the viewport */
+            margin: 0 10px;
+            /* Padding for mobile responsiveness */
+        }
+
+        .iframe-overlay {
+            position: absolute;
+            top: 0;
+            /* No top offset */
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Full height to cover the background container */
+            border: none;
+            z-index: 1;
+            /* Ensure iframe is below the instructions */
+            opacity: 0.78;
+            /* Adjust transparency if needed */
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 24px;
+            z-index: 3;
+            /* Ensure loading indicator is above other content */
+        }
+
+        .playerbg{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #ffffff;
+            width: 325px; /* Rectangle width */
+            height: 30px; /* Rectangle height */
+            border: solid rgb(255, 253, 253) 5px;
+            z-index: 1;
+            opacity: 0.85;
+            /* Ensure loading indicator is above other content */
+        }
+
+        /* Media queries for responsiveness */
+        @media (max-width: 768px) {
+            .background-container {
+                height: 100vh;
+                /* Ensure full viewport height */
+            }
+        }
+
+        @media (max-width: 480px) {
+            .background-container {
+                height: 100vh;
+                /* Ensure full viewport height */
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="iframeContainer" class="background-container">
+        <div id="title" class="title"></div>
+        <div id="playerbg" class="playerbg"></div>
+        <div id="instructions" class="instructions">Can't hear your music? <br /> Wait 3-4 seconds after clicking play
+        </div>
+        <iframe id="googleIframe" class="iframe-overlay" allow="autoplay"></iframe>
+        <div id="loading" class="loading">Loading...</div>
+    </div>
+
+    <script>
+        async function fetchCSV(url) {
+            const response = await fetch(url);
+            const text = await response.text();
+            const lines = text.split('\n');
+            const headers = lines[0].split(',');
+            const data = lines.slice(1).map(line => {
+                const values = line.split(',');
+                return headers.reduce((obj, header, index) => {
+                    obj[header] = values[index];
+                    return obj;
+                }, {});
+            });
+            return data;
+        }
+
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        async function loadContent(id) {
+            const data = await fetchCSV('content.csv');
+            const item = data.find(d => d.id === id);
+
+            if (item) {
+                const container = document.getElementById('iframeContainer');
+                const iframe = document.getElementById('googleIframe');
+                const title = document.getElementById('title');
+                const loading = document.getElementById('loading');
+
+                container.style.backgroundImage = `url(${item.image})`;
+                title.textContent = item.title;
+                iframe.src = item.iframeSrc;
+
+                // Show loading indicator
+                loading.style.display = 'block';
+
+                // Hide loading indicator once iframe is fully loaded
+                iframe.onload = () => {
+                    loading.style.display = 'none';
+                };
+            } else {
+                console.error('Invalid ID');
+            }
+        }
+
+        // Get the 'view' parameter from the URL
+        const viewParam = getUrlParameter('view');
+
+        // Load content based on the 'view' parameter
+        if (viewParam) {
+            loadContent(viewParam);
+        } else {
+            console.error('No valid view parameter found in the URL');
+        }
+    </script>
+
+</body>
+
+</html>
